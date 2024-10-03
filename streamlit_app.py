@@ -1,50 +1,46 @@
 import streamlit as st
-import google.generativeai as genai
+import json
+import os
 
-# Cấu hình API key (thay "abc" bằng API key thật của bạn)
-GOOGLE_API_KEY = "AIzaSyBHb1kxosSIwj0F-cujdrVZAWKoCtuxB84"
-genai.configure(api_key=GOOGLE_API_KEY)
+# File để lưu trữ dữ liệu
+DATA_FILE = 'saved_data.json'
 
-# Khởi tạo mô hình Gemini
-model = genai.GenerativeModel('gemini-1.5-flash')
+# Hàm lưu và tải dữ liệu
+def save_data(data): 
+    with open(DATA_FILE, 'w') as f: json.dump(data, f)
+def load_data(): 
+    return json.load(open(DATA_FILE)) if os.path.exists(DATA_FILE) else {}
 
-# Tiêu đề ứng dụng
-st.title("Trò chuyện với Gemini")
+# Tải dữ liệu đã lưu
+loaded_data = load_data()
 
-# Lưu trữ lịch sử chat
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+# Khởi tạo session state từ dữ liệu đã lưu nếu có
+row_count = loaded_data.get('row_count', 1)
+for i in range(row_count):
+    st.session_state.setdefault(f'text_input1_{i}', loaded_data.get(f'text_input1_{i}', ''))
+    st.session_state.setdefault(f'text_input2_{i}', loaded_data.get(f'text_input2_{i}', ''))
 
-# Hiển thị lịch sử chat
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        # Hiển thị nội dung chat
-        st.markdown(message["content"])
+# Hàm thêm hàng mới
+def add_row():
+    st.session_state[f'text_input1_{row_count}'] = ''
+    st.session_state[f'text_input2_{row_count}'] = ''
+    st.session_state['row_count'] += 1
 
-# Nhận input từ người dùng
-if prompt := st.chat_input("Nhập tin nhắn của bạn"):
-    # Thêm tin nhắn của người dùng vào lịch sử
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    # Hiển thị tin nhắn của người dùng
-    with st.chat_message("user"):
-        st.markdown(prompt)
-        # Thêm nút sao chép (sử dụng JavaScript để sao chép)
-        st.markdown(f'<button onclick="navigator.clipboard.writeText(\'{prompt}\')">Sao chép</button>', unsafe_allow_html=True)
+# Hiển thị các hàng
+for row in range(row_count):
+    cols = st.columns([2, 0.5, 2])
+    with cols[0]:
+        st.text_input(f"input ({row+1})", key=f"text_input1_{row}")
+    with cols[1]:
+        if st.button(f"Test ({row+1})", key=f"test_button_{row}"):
+            st.session_state[f'text_input2_{row}'] = st.session_state[f'text_input1_{row}']
+    with cols[2]:
+        st.text_input(f"reply ({row+1})", key=f"text_input2_{row}")
 
-    # Gọi API Gemini để tạo phản hồi
-    try:
-        response = model.generate_content(prompt)
+# Thêm nút để thêm hàng mới
+if st.button("+++"): add_row()
 
-        # Kiểm tra phản hồi từ API
-        if response.text:
-            # Thêm phản hồi của Gemini vào lịch sử
-            st.session_state.messages.append({"role": "assistant", "content": response.text})
-            # Hiển thị phản hồi của Gemini
-            with st.chat_message("assistant"):
-                st.markdown(response.text)
-                # Thêm nút sao chép (sử dụng JavaScript để sao chép)
-                st.markdown(f'<button onclick="navigator.clipboard.writeText(\'{response.text}\')">Sao chép</button>', unsafe_allow_html=True)
-        else:
-            st.error("Gemini không thể tạo phản hồi. Vui lòng thử lại sau.")
-    except Exception as e:
-        st.error(f"Đã xảy ra lỗi khi gọi API Gemini: {e}")
+# Lưu dữ liệu vào file
+save_data({f'text_input1_{i}': st.session_state[f'text_input1_{i}'] for i in range(row_count)} | 
+          {f'text_input2_{i}': st.session_state[f'text_input2_{i}'] for i in range(row_count)} |
+          {'row_count': row_count})
