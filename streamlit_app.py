@@ -1,6 +1,11 @@
 import streamlit as st
 import json
 import os
+import google.generativeai as genai
+
+GOOGLE_API_KEY="AIzaSyBHb1kxosSIwj0F-cujdrVZAWKoCtuxB84"
+genai.configure(api_key=GOOGLE_API_KEY)
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 # File để lưu trữ dữ liệu
 DATA_FILE = 'saved_data.json'
@@ -30,12 +35,13 @@ def add_row():
 for row in range(row_count):
     cols = st.columns([2, 0.5, 2])
     with cols[0]:
-        st.text_input(f"input ({row+1})", key=f"text_input1_{row}")
+        st.text_area(f"input_{row+1}:", key=f"text_input1_{row}")
     with cols[1]:
-        if st.button(f"Test ({row+1})", key=f"test_button_{row}"):
-            st.session_state[f'text_input2_{row}'] = st.session_state[f'text_input1_{row}']
+        if st.button(f"ai_{row+1}", key=f"test_button_{row}"):
+            response = model.generate_content(st.session_state[f'text_input1_{row}'])
+            st.session_state[f'text_input2_{row}'] = response.text
     with cols[2]:
-        st.text_input(f"reply ({row+1})", key=f"text_input2_{row}")
+        st.markdown(f"**Reply**_{row+1}: {st.session_state[f'text_input2_{row}']}")
 
 # Thêm nút để thêm hàng mới
 if st.button("+++"): add_row()
