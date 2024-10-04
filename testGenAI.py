@@ -68,3 +68,4 @@ if prompt := st.chat_input("Nhập tin nhắn của bạn"):
     except Exception as e:
         st.error(f"Đã xảy ra lỗi khi gọi API Gemini: {e}")
 """
+

@@ -1,0 +1,9 @@
+[[pages]]
+path = "pageAIGenerator.py"
+name = "AIGenerator"
+icon = "📄"
+
+[[pages]]
+path = "page2.py"
+name = "Page 2"
+icon = ":material/history:"
